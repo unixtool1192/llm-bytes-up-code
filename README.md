@@ -74,7 +74,7 @@ Measured on the course's DGX Spark:
 | 01, 02, 03 | about 1 s each | up to 1.4 GB |
 | 04, 05 | seconds, mostly the server generating | small (the server holds the model) |
 | 06 | about 15 s — three forward passes, each dequantizing ~7 GB of weights | **about 9 GB** |
-| 07 (`bench`) | about 10 s | about 2.5 GB of GPU memory at once |
+| 07 (`bench`) | about 2 s | about 2.5 GB of GPU memory at once |
 
 - **Speeds depend on the machine.** Lesson 3's matvec timing and lesson 4's tokens/s will differ on other hardware; the *ratios* are the point.
 - **Probabilities and tokenizations should match the lessons exactly**, for the same model file and a similar llama.cpp version.

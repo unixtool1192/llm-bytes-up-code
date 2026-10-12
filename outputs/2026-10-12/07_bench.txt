@@ -1,0 +1,36 @@
+== 1. the device ==
+  name:                          NVIDIA GB10
+  compute capability:            12.1
+  streaming multiprocessors:     48
+  max threads per SM:            1536
+  32-bit registers per SM:       65536  (256 KB)
+  shared memory per SM:          100 KB
+  L2 cache:                      24576 KB
+  global memory visible to GPU:  130.7 GB
+  memory bus width:              256 bits
+  shares memory with the CPU:    yes (integrated)
+  free right now:                34.4 GB
+
+== 2. read bandwidth (hand-written kernel) ==
+  read 2.15 GB in 8.29 ms  ->  259 GB/s
+
+== 3. weight matrix (11008 x 4096, BF16) times N token vectors ==
+       N  time (ms)      TFLOP/s   weights GB/s ms per token
+       1      0.374         0.24            241      0.37414
+       2      0.350         0.52            258      0.17506
+       4      0.361         1.00            250      0.09031
+       8      0.354         2.04            255      0.04425
+      16      0.353         4.09            255      0.02207
+      32      0.376         7.68            240      0.01174
+      64      0.401        14.41            225      0.00626
+     128      0.424        27.25            213      0.00331
+     256      0.457        50.55            197      0.00178
+     512      0.607        76.09            149      0.00119
+    1024      1.206        76.58             75      0.00118
+    2048      2.285        80.82             39      0.00112
+    4096      5.009        73.74             18      0.00122
+
+== 4. big square matrix multiply (8192 x 8192 x 8192) ==
+  BF16 on tensor cores:      12.3 ms  ->    89.4 TFLOP/s
+  FP32, no tensor cores:     56.4 ms  ->    19.5 TFLOP/s
+  ratio:                 4.6x
