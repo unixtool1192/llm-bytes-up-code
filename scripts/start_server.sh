@@ -5,6 +5,8 @@
 #
 # LLAMA_SERVER can point at the llama-server binary if it is not on PATH. The server stops by
 # itself after LESSON_SERVER_SECONDS (default 2400), so a forgotten one cannot hold GPU memory.
+# LESSON_PARALLEL (default 1) sets how many requests it serves at once, and LESSON_CTX (default
+# 4096) the total context shared between them; the capstone's batching script needs 16 and 16384.
 # Stop it sooner with:  kill "$(cat /tmp/llm-bytes-up-server.pid)"
 set -euo pipefail
 
@@ -25,7 +27,7 @@ if [[ "$bin" == */* ]]; then
 fi
 
 setsid nohup timeout "$seconds" "$bin" -m "$model" --host 127.0.0.1 --port "$port" \
-    -c 4096 -ngl 99 --parallel 1 >"$log" 2>&1 </dev/null &
+    -c "${LESSON_CTX:-4096}" -ngl 99 --parallel "${LESSON_PARALLEL:-1}" >"$log" 2>&1 </dev/null &
 echo $! >"$pidfile"
 
 for _ in $(seq 1 60); do
