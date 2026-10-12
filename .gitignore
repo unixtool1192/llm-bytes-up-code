@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 *.gguf
 *.log
+lessons/07_hardware/bench

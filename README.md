@@ -14,6 +14,7 @@ The lessons are written for engineers who are fluent in C and systems but new to
 | `lessons/04_next_token.py` | 4 — The forward pass | Next-token probabilities for a few prompts; prefill vs decode speed | **yes** |
 | `lessons/05_sampling.py` | 5 — Generating text | The generation loop step by step; temperature, top-k, top-p and min-p applied to one real distribution and re-derived by hand; seeds; end-of-sequence; chat templates | **yes** |
 | `lessons/06_attention_rebuild.py` | 6 — Attention and the KV cache | The whole model rebuilt in NumPy: its prediction checked against llama.cpp, every attention weight captured, and the KV cache tested | optional, to compare predictions |
+| `lessons/07_hardware/bench.cu` | 7 — The hardware fit | CUDA C: the GPU's device query, a hand-written memory-read kernel, one weight matrix times 1–4,096 tokens (the memory-to-compute crossover), and BF16 tensor cores vs FP32 | no — needs the CUDA toolkit instead |
 
 `llmbytes/` holds the shared pieces: reading GGUF metadata, dequantizing Q8_0, rebuilding the tokenizer from the file, and a small client for `llama-server`.
 
@@ -45,6 +46,12 @@ uv run python lessons/03_ffn_by_hand.py "$MODEL"
 uv run python lessons/06_attention_rebuild.py "$MODEL"
 ```
 
+Lesson 7 is CUDA C. It needs an NVIDIA GPU and the CUDA toolkit (`nvcc`, with cuBLAS), but not the model:
+
+```bash
+cd lessons/07_hardware && make && ./bench
+```
+
 Lessons 4 and 5 talk to a running llama.cpp `llama-server`. Lessons 2 and 6 can use one as well, for cross-checks. Start a temporary one, bound to localhost:
 
 ```bash
@@ -67,6 +74,7 @@ Measured on the course's DGX Spark:
 | 01, 02, 03 | about 1 s each | up to 1.4 GB |
 | 04, 05 | seconds, mostly the server generating | small (the server holds the model) |
 | 06 | about 15 s — three forward passes, each dequantizing ~7 GB of weights | **about 9 GB** |
+| 07 (`bench`) | about 10 s | about 2.5 GB of GPU memory at once |
 
 - **Speeds depend on the machine.** Lesson 3's matvec timing and lesson 4's tokens/s will differ on other hardware; the *ratios* are the point.
 - **Probabilities and tokenizations should match the lessons exactly**, for the same model file and a similar llama.cpp version.
