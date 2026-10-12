@@ -1,0 +1,92 @@
+== bytes ==
+  'the cat'    UTF-8 bytes: 74 68 65 20 63 61 74
+  'A'          UTF-8 bytes: 41
+  'é'          UTF-8 bytes: c3 a9
+  '猫'          UTF-8 bytes: e7 8c ab
+  '🦙'          UTF-8 bytes: f0 9f a6 99
+  'ᚠᚢᚦ'        UTF-8 bytes: e1 9a a0 e1 9a a2 e1 9a a6
+
+== the vocabulary ==
+  size: 32256  merges: 31757
+  id     0 -> '!'
+  id  5000 -> 'eks'
+  id  5939 -> 'Ġcat'
+  id 20000 -> 'ĠOri'
+  id 31000 -> 'Ġestable'
+  byte-level stand-ins: 256, missing from vocab: 0
+  space 0x20    is shown as 'Ġ', vocab id 207
+  newline 0x0A  is shown as 'Ċ', vocab id 185
+  tab 0x09      is shown as 'ĉ', vocab id 184
+  tokenizer.ggml.bos_token_id = 32013 '<｜begin▁of▁sentence｜>'
+  tokenizer.ggml.eos_token_id = 32021 '<|EOT|>'
+
+== tokenizations (rebuilt tokenizer vs llama.cpp) ==
+  'The cat sat on the mat.'
+      ids [546, 5939, 2645, 331, 254, 1575, 13]
+      pieces ['The', 'Ġcat', 'Ġsat', 'Ġon', 'Ġthe', 'Ġmat', '.']
+      round-trip True
+      llama.cpp MATCH
+  'def foo(x):\n    return x * 2'
+      ids [1551, 24531, 7, 87, 1772, 185, 315, 967, 1371, 572, 207, 17]
+      pieces ['def', 'Ġfoo', '(', 'x', '):', 'Ċ', 'ĠĠĠ', 'Ġreturn', 'Ġx', 'Ġ*', 'Ġ', '2']
+      round-trip True
+      llama.cpp DIFFERS: [1551, 24531, 7, 87, 1772, 185, 315, 967, 1371, 207, 9, 207, 17]
+  'antidisestablishmentarianism'
+      ids [400, 304, 262, 18118, 2217, 469, 9373, 1990]
+      pieces ['ant', 'id', 'is', 'estab', 'lish', 'ment', 'arian', 'ism']
+      round-trip True
+      llama.cpp MATCH
+  ' configured the DGX Spark.'
+      ids [14578, 254, 413, 38, 55, 2566, 856, 13]
+      pieces ['Ġconfigured', 'Ġthe', 'ĠD', 'G', 'X', 'ĠSp', 'ark', '.']
+      round-trip True
+      llama.cpp MATCH
+  '  indented'
+      ids [207, 1539, 8909]
+      pieces ['Ġ', 'Ġind', 'ented']
+      round-trip True
+      llama.cpp MATCH
+  'A'
+      ids [32]
+      pieces ['A']
+      round-trip True
+      llama.cpp MATCH
+  'é'
+      ids [584]
+      pieces ['Ã©']
+      round-trip True
+      llama.cpp MATCH
+  '猫'
+      ids [15474]
+      pieces ['çĮ«']
+      round-trip True
+      llama.cpp MATCH
+  '🦙'
+      ids [10047, 99, 234]
+      pieces ['ðŁ', '¦', 'Ļ']
+      round-trip True
+      llama.cpp MATCH
+  'ᚠᚢᚦ'
+      ids [155, 235, 241, 155, 235, 95, 155, 235, 99]
+      pieces ['á', 'ļ', 'ł', 'á', 'ļ', '¢', 'á', 'ļ', '¦']
+      round-trip True
+      llama.cpp MATCH
+
+== embeddings: one row per token ==
+  ' cat' = id 5939, row of 4096 numbers, first 8: [-0.1781, -0.0918, 0.1531, 0.2644, -0.1252, -0.1837, -0.0891, 0.0111]
+
+== cosine similarity between embedding rows ==
+  ' Monday'  . ' Tuesday' +0.410
+  ' int'     . ' float'   +0.370
+  ' int'     . ' string'  +0.283
+  ' cat'     . ' dog'     +0.232
+  ' def'     . ' function' +0.214
+  ' cat'     . ' int'     +0.083
+  ' cat'     . ' return'  +0.010
+  ' Monday'  . ' return'  +0.007
+
+== nearest neighbours over the whole vocabulary ==
+  ' Monday'  -> ['onday', ' Friday', ' Saturday', ' Sunday', ' Tuesday', ' Wednesday', 'uesday', ' Thursday']
+  ' int'     -> ['\tint', 'int', ' Int', 'Int', ' float', ' uint', ' bool', ' INT']
+  ' def'     -> ['def', ' Def', 'Def', 'DEF', ' fun', 'ef', ' void', ' function']
+  ' cat'     -> ['cat', ' Cat', 'Cat', 'CAT', ' cats', ' dog', '猫', ' Kat']

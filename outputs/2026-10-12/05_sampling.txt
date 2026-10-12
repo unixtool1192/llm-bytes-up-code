@@ -1,0 +1,63 @@
+== 1. the loop, greedy, step by step ==
+  step  1: chose ' == '       | top-3: ' == ' 0.31, ' <= ' 0.28, '<' 0.15
+  step  2: chose '0'          | top-3: '0' 0.89, '1' 0.11, '2' 0.00
+  step  3: chose ':'          | top-3: ':' 0.90, ' or' 0.09, ' :' 0.01
+  step  4: chose '\n'         | top-3: '\n' 0.92, ' return' 0.05, ' ' 0.02
+  step  5: chose '       '    | top-3: '       ' 1.00, '     ' 0.00, '      ' 0.00
+  step  6: chose ' return'    | top-3: ' return' 0.99, ' fib' 0.00, ' result' 0.00
+  step  7: chose ' '          | top-3: ' ' 0.93, ' []' 0.04, ' [' 0.01
+  step  8: chose '0'          | top-3: '0' 1.00, '1' 0.00, '2' 0.00
+  step  9: chose '\n'         | top-3: '\n' 0.99, ' ' 0.01, ',' 0.00
+  step 10: chose '   '        | top-3: '   ' 0.99, '\n' 0.01, '    ' 0.00
+  step 11: chose ' elif'      | top-3: ' elif' 0.91, ' if' 0.08, ' else' 0.01
+  step 12: chose ' n'         | top-3: ' n' 1.00, ' ' 0.00, ' (' 0.00
+  step 13: chose ' == '       | top-3: ' == ' 0.98, '==' 0.01, ' ==' 0.00
+  step 14: chose '1'          | top-3: '1' 1.00, '2' 0.00, '0' 0.00
+  step 15: chose ':'          | top-3: ':' 0.97, ' or' 0.03, ' :' 0.00
+  step 16: chose '\n'         | top-3: '\n' 1.00, ' ' 0.00, '  ' 0.00
+  step 17: chose '       '    | top-3: '       ' 1.00, '      ' 0.00, '        ' 0.00
+  step 18: chose ' return'    | top-3: ' return' 1.00, ' #' 0.00, ' fib' 0.00
+  step 19: chose ' '          | top-3: ' ' 1.00, ' fib' 0.00, ' n' 0.00
+  step 20: chose '1'          | top-3: '1' 1.00, '0' 0.00, '2' 0.00
+  step 21: chose '\n'         | top-3: '\n' 1.00, ' ' 0.00, '    ' 0.00
+  step 22: chose '   '        | top-3: '   ' 0.99, '\n' 0.01, '    ' 0.00
+  step 23: chose ' else'      | top-3: ' else' 0.97, ' elif' 0.02, ' return' 0.01
+  step 24: chose ':'          | top-3: ':' 1.00, ' :' 0.00, ':#' 0.00
+  text: 'def fibonacci(n):\n    if n == 0:\n        return 0\n    elif n == 1:\n        return 1\n    else:'  stop: limit
+
+== 2. one distribution under different settings (server, then by hand) ==
+  raw              server: ' == ':0.307  ' <= ':0.279  '<':0.145  ' < ':0.122  '==':0.100  ' in':0.024
+                   by hand: 0.307  0.279  0.146  0.122  0.100  0.024   (200 kept)
+  temperature 0.5  server: ' == ':0.431  ' <= ':0.356  '<':0.097  ' < ':0.068  '==':0.046  ' in':0.003
+                   by hand: 0.431  0.356  0.097  0.068  0.046  0.003   (all kept)
+  temperature 1.5  server: ' == ':0.240  ' <= ':0.225  '<':0.146  ' < ':0.130  '==':0.114  ' in':0.044
+                   by hand: 0.242  0.227  0.147  0.131  0.115  0.044   (all kept)
+  top_k 3          server: ' == ':0.420  ' <= ':0.381  '<':0.199
+                   by hand: 0.420  0.381  0.199   (3 kept)
+  top_p 0.8        server: ' == ':0.360  ' <= ':0.327  '<':0.170  ' < ':0.143
+                   by hand: 0.360  0.327  0.170  0.143   (4 kept)
+  min_p 0.3        server: ' == ':0.322  ' <= ':0.293  '<':0.153  ' < ':0.128  '==':0.105
+                   by hand: 0.322  0.293  0.153  0.128  0.105   (5 kept)
+
+== 3. sampling at temperature 0.8 with five seeds ==
+  seed 1: '==1:\n        return 0\n    elif n==2'
+  seed 2: ' == 0 or n == 1:\n        return n\n    else'
+  seed 3: ' == 0:\n        return 0\n    elif n == 1'
+  seed 4: ' < 0:\n        print("输入的数字必须是正数'
+  seed 5: ' == 0: return 0\n    if n == 1: return'
+  seed 3 twice more gives the same text
+
+== 4. stopping on end-of-sequence ==
+  stop_type=eos after 68 tokens
+  Here is a simple Python function that returns the square of a number:
+  
+  ```python
+  def square(x):
+      return x ** 2
+  ```
+  
+  You can use this function by calling it with a number as an argument. For example, `square(4)` would return `16`.
+  
+== 5. what a chat request becomes ==
+  template output: '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nWhat is 2+2?<|im_end|>\n<|im_start|>assistant\n'
+  first tokens: ['<', '|', 'im', '_', 'start', '|', '>', 'system', '\n']

@@ -1,0 +1,52 @@
+
+'The capital of France is'  (5 prompt tokens)
+  ' Paris'     id   8873  p = 0.9272   logprob = -0.0756
+  ' "'         id    440  p = 0.0148   logprob = -4.2102
+  ' <'         id   1013  p = 0.0082   logprob = -4.8023
+  ' ?'         id   3015  p = 0.0082   logprob = -4.8078
+  ':'          id     25  p = 0.0069   logprob = -4.9748
+  ' {'         id    507  p = 0.0063   logprob = -5.0740
+  ' {}'        id  10771  p = 0.0029   logprob = -5.8436
+  ' the'       id    254  p = 0.0026   logprob = -5.9421
+  top-8 total = 0.9771
+
+'The cat sat on the'  (5 prompt tokens)
+  ' mat'       id   1575  p = 0.9852   logprob = -0.0149
+  ' {'         id    507  p = 0.0038   logprob = -5.5743
+  ' floor'     id   6599  p = 0.0032   logprob = -5.7585
+  ' Mat'       id   6727  p = 0.0013   logprob = -6.6149
+  ' table'     id   2365  p = 0.0010   logprob = -6.9427
+  ' hat'       id  10077  p = 0.0008   logprob = -7.0994
+  ' <'         id   1013  p = 0.0005   logprob = -7.5753
+  ' "'         id    440  p = 0.0004   logprob = -7.7793
+  top-8 total = 0.9962
+
+'def fibonacci(n):\n    if n'  (12 prompt tokens)
+  ' == '       id   7400  p = 0.3075   logprob = -1.1794
+  ' <= '       id  22322  p = 0.2792   logprob = -1.2757
+  '<'          id     27  p = 0.1455   logprob = -1.9276
+  ' < '        id   8086  p = 0.1219   logprob = -2.1048
+  '=='         id    780  p = 0.0999   logprob = -2.3040
+  ' in'        id    279  p = 0.0238   logprob = -3.7370
+  ' <='        id  14443  p = 0.0082   logprob = -4.8081
+  ' > '        id   6213  p = 0.0048   logprob = -5.3408
+  top-8 total = 0.9907
+
+'for (int i = 0; i <'  (13 prompt tokens)
+  ' '          id    207  p = 0.2698   logprob = -1.3100
+  ' n'         id    291  p = 0.1428   logprob = -1.9464
+  ' size'      id   2398  p = 0.0418   logprob = -3.1741
+  ' N'         id    461  p = 0.0312   logprob = -3.4677
+  '='          id     28  p = 0.0269   logprob = -3.6162
+  ' num'       id   1181  p = 0.0241   logprob = -3.7244
+  ' arr'       id   5369  p = 0.0212   logprob = -3.8547
+  ' array'     id   3857  p = 0.0184   logprob = -3.9978
+  top-8 total = 0.5762
+
+== decode: generating one token at a time ==
+  128 tokens at 33.7 tokens/s
+
+== prefill: a long prompt processed at once ==
+  prompt tokens: 1921
+  prefill 1921 tokens in 0.80 s = 2407 tokens/s;  then decode 29.3 tokens/s
+  prefill 1921 tokens in 0.80 s = 2414 tokens/s;  then decode 29.2 tokens/s

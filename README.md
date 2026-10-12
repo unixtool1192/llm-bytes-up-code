@@ -60,12 +60,20 @@ The server offloads every layer to the GPU (`-ngl 99`), uses a 4,096-token conte
 
 ### What to expect
 
-- **Lessons 1, 2, 4 and 5 finish in seconds.**
-- **Lesson 3 takes about a minute**, most of it the timing loops.
-- **Lesson 6 takes a few minutes on a CPU.** It dequantizes about 7 GB of weights on each of its three forward passes. The arithmetic is small; Python unpacking the weights is not.
-- **Timings depend on the machine.** The course's figures come from an NVIDIA DGX Spark.
-- **Probabilities and tokenizations should match the lessons** for the same model file and llama.cpp version.
+Measured on the course's DGX Spark:
+
+| Script | Wall time | Peak memory |
+|---|---|---|
+| 01, 02, 03 | about 1 s each | up to 1.4 GB |
+| 04, 05 | seconds, mostly the server generating | small (the server holds the model) |
+| 06 | about 15 s — three forward passes, each dequantizing ~7 GB of weights | **about 9 GB** |
+
+- **Speeds depend on the machine.** Lesson 3's matvec timing and lesson 4's tokens/s will differ on other hardware; the *ratios* are the point.
+- **Probabilities and tokenizations should match the lessons exactly**, for the same model file and a similar llama.cpp version.
+- **Lesson 5's by-hand check uses only the top 200 tokens**, so at temperatures above 1 (which shift weight into the tail) it reads a few thousandths high. The other settings match exactly.
 
 ## Recorded runs
 
 `outputs/` holds the output of every script as run for the course, one folder per date, so you can compare your run against the one the lessons quote.
+
+`outputs/2026-10-12/` was produced from a fresh clone of this repository on an NVIDIA DGX Spark (GB10, 128 GB unified memory), with llama.cpp build 10630 (commit `d222767c7`) serving the model on the GPU, and with the `--server` cross-checks enabled for lessons 2 and 6.
