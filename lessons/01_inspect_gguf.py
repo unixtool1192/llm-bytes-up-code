@@ -52,8 +52,8 @@ def main():
     print(f"  one block: {blk:,} x {nblk} blocks = {blk * nblk:,}; embedding + output + final norm: {rest:,}")
 
     print("\ndtype -> size of this model:")
-    for name, bpp in (("FP32", 4), ("BF16/FP16", 2), ("Q8_0", 34 / 32), ("~4-bit", 0.5)):
-        print(f"  {name:10} {bpp:6.4f} bytes/param -> {total * bpp / 1e9:5.2f} GB")
+    for name, bpp in (("FP32", 4), ("BF16/FP16", 2), ("Q8_0", 34 / 32), ("Q4_K (~4.5-bit)", 4.5 / 8)):
+        print(f"  {name:16} {bpp:6.4f} bytes/param -> {total * bpp / 1e9:5.2f} GB")
 
     raw = m.raw_bytes(args.tensor)[:34]
     print(f"\nfirst 34 bytes of {args.tensor}:")

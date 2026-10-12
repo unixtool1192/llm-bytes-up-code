@@ -72,7 +72,7 @@ def main():
     print("\n== embeddings: one row per token ==")
     cat = m.encode(" cat")[0]
     row = m.dequant_row("token_embd.weight", cat)
-    print(f"  ' cat' = id {cat}, row of {row.size} numbers, first 8: {np.round(row[:8], 4).tolist()}")
+    print(f"  ' cat' = id {cat}, row of {row.size} numbers, first 8: {[round(float(v), 4) for v in row[:8]]}")
 
     def vec(word):
         ids = m.encode(word)

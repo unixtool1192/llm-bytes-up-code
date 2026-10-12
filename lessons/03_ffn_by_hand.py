@@ -40,7 +40,7 @@ def main():
     print("shapes (rows x cols): gate", Wg.shape, "up", Wu.shape, "down", Wd.shape)
 
     print("\n== 1. RMSNorm ==")
-    print("  first 3 elements:", np.round(x[:3], 4).tolist(), " squares:", np.round(x[:3] ** 2, 4).tolist())
+    print("  first 3 elements:", [round(float(v), 4) for v in x[:3]], " squares:", [round(float(v) ** 2, 4) for v in x[:3]])
     ms = float(np.mean(x * x))
     rms = float(np.sqrt(ms + eps))
     print(f"  mean of squares = {ms:.5f}   RMS = {rms:.4f}")
