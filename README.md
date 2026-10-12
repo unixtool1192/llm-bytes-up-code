@@ -95,3 +95,7 @@ Measured on the course's DGX Spark:
 `outputs/` holds the output of every script as run for the course, one folder per date, so you can compare your run against the one the lessons quote.
 
 `outputs/2026-10-12/` was produced from a fresh clone of this repository on an NVIDIA DGX Spark (GB10, 128 GB unified memory), with llama.cpp build 10630 (commit `d222767c7`) serving the model on the GPU, and with the `--server` cross-checks enabled for lessons 2 and 6.
+
+## License
+
+MIT — see [LICENSE](LICENSE). The model the scripts read is not part of this repository and carries its own license.
