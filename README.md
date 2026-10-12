@@ -66,6 +66,14 @@ kill "$(cat /tmp/llm-bytes-up-server.pid)"
 
 The server offloads every layer to the GPU (`-ngl 99`), uses a 4,096-token context, serves one request at a time, and stops itself after 40 minutes if you forget to.
 
+The capstone's batching measurement needs a server that takes 16 requests at once:
+
+```bash
+LESSON_PARALLEL=16 LESSON_CTX=16384 LLAMA_SERVER=/path/to/llama-server scripts/start_server.sh "$MODEL"
+uv run python lessons/08_capstone_batching.py --server http://127.0.0.1:8099
+kill "$(cat /tmp/llm-bytes-up-server.pid)"
+```
+
 ### What to expect
 
 Measured on the course's DGX Spark:
