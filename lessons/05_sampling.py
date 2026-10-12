@@ -56,6 +56,7 @@ def main():
     print("  text:", repr(FIB + res["content"]), " stop:", res["stop_type"])
 
     print("\n== 2. one distribution under different settings (server, then by hand) ==")
+    print("  (by hand uses only the top 200 tokens, so temperatures above 1 read slightly high)")
     # The full-vocabulary raw distribution, for the by-hand temperature check.
     full = srv.complete(FIB, n_predict=1, n_probs=200, post_sampling_probs=True, seed=1, **NEUTRAL)
     raw_all = [t["prob"] for t in full["completion_probabilities"][0]["top_probs"]]
