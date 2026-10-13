@@ -7,6 +7,9 @@
 # itself after LESSON_SERVER_SECONDS (default 2400), so a forgotten one cannot hold GPU memory.
 # LESSON_PARALLEL (default 1) sets how many requests it serves at once, and LESSON_CTX (default
 # 4096) the total context shared between them; the capstone's batching script needs 16 and 16384.
+# LESSON_GPU_LAYERS (default 99, meaning all of them) sets how many layers go on the GPU: 0 runs
+# the whole model on the CPU, and a number in between splits it when the GPU's memory is too
+# small for all 32. A llama.cpp built without GPU support ignores it.
 # Stop it sooner with:  kill "$(cat /tmp/llm-bytes-up-server.pid)"
 set -euo pipefail
 
@@ -17,8 +20,14 @@ seconds="${LESSON_SERVER_SECONDS:-2400}"
 pidfile=/tmp/llm-bytes-up-server.pid
 log=/tmp/llm-bytes-up-server.log
 
+gpu_layers="${LESSON_GPU_LAYERS:-99}"
+
 if [[ ! -f "$model" ]]; then
     echo "no such model file: $model" >&2
+    exit 1
+fi
+if [[ ! "$gpu_layers" =~ ^[0-9]+$ ]]; then
+    echo "LESSON_GPU_LAYERS must be a whole number of layers, not '$gpu_layers'" >&2
     exit 1
 fi
 # A llama.cpp build that keeps its shared libraries beside the binary needs them on the path.
@@ -27,7 +36,7 @@ if [[ "$bin" == */* ]]; then
 fi
 
 setsid nohup timeout "$seconds" "$bin" -m "$model" --host 127.0.0.1 --port "$port" \
-    -c "${LESSON_CTX:-4096}" -ngl 99 --parallel "${LESSON_PARALLEL:-1}" >"$log" 2>&1 </dev/null &
+    -c "${LESSON_CTX:-4096}" -ngl "$gpu_layers" --parallel "${LESSON_PARALLEL:-1}" >"$log" 2>&1 </dev/null &
 echo $! >"$pidfile"
 
 for _ in $(seq 1 60); do

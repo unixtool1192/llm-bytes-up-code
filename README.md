@@ -15,13 +15,16 @@ The lessons are written for engineers who are fluent in C and systems but new to
 | `lessons/05_sampling.py` | 5 — Generating text | The generation loop step by step; temperature, top-k, top-p and min-p applied to one real distribution and re-derived by hand; seeds; end-of-sequence; chat templates | **yes** |
 | `lessons/06_attention_rebuild.py` | 6 — Attention and the KV cache | The whole model rebuilt in NumPy: its prediction checked against llama.cpp, every attention weight captured, and the KV cache tested | optional, to compare predictions |
 | `lessons/07_hardware/bench.cu` | 7 — The hardware fit | CUDA C: the GPU's device query, a hand-written memory-read kernel, one weight matrix times 1–4,096 tokens (the memory-to-compute crossover), and BF16 tensor cores vs FP32 | no — needs the CUDA toolkit instead |
+| `lessons/07_hardware/bench_cpu.py` | 7 — The hardware fit, without an NVIDIA GPU | The same measurements on the CPU with NumPy, in the same output format: memory-read bandwidth, one weight matrix times 1–4,096 tokens, and peak FP32 throughput | no |
 | `lessons/08_capstone_batching.py` | Capstone — Why decode is memory bound | 1, 2, 4, 8 and 16 users generating at the same time: per-user speed vs total throughput | **yes**, with 16 slots: `LESSON_PARALLEL=16 LESSON_CTX=16384` |
 
 `llmbytes/` holds the shared pieces: reading GGUF metadata, dequantizing Q8_0, rebuilding the tokenizer from the file, and a small client for `llama-server`.
 
 ## The model
 
-The course uses one small, plain, dense model throughout: **`deepseek-coder-6.7b-instruct`, as a Q8_0 GGUF** (about 7.2 GB). Any GGUF of that model works. The scripts take its path as an argument, so put it wherever you like.
+The course uses one small, plain, dense model throughout: **`deepseek-coder-6.7b-instruct`, as a Q8_0 GGUF** (about 7.2 GB). The scripts take its path as an argument, so put it wherever you like.
+
+The course's runs used TheBloke's conversion, from Hugging Face: [`TheBloke/deepseek-coder-6.7B-instruct-GGUF`](https://huggingface.co/TheBloke/deepseek-coder-6.7B-instruct-GGUF), file `deepseek-coder-6.7b-instruct.Q8_0.gguf` — 7,163,879,648 bytes, SHA-256 `02cd6ce7ccec670cf6d3dd147932f13e584f9e964d5a3297a74b401b658471ae`. Another GGUF of the same model runs the scripts too, but only this file reproduces the lessons' probabilities exactly.
 
 The scripts handle the llama architecture with F32 and Q8_0 tensors. Other quantizations or architectures will stop with a clear error rather than give wrong numbers. `06_attention_rebuild.py` also assumes one key/value head per query head, which this model has.
 
@@ -51,6 +54,16 @@ Lesson 7 is CUDA C. It needs an NVIDIA GPU and the CUDA toolkit (`nvcc`, with cu
 
 ```bash
 cd lessons/07_hardware && make && ./bench
+./bench --read-only --blocks 1,2,4,8,16,48,96     # the read test only, once per block count
+```
+
+On Windows, `make` is not needed: `nvcc -O3 -std=c++17 -arch=native -ccbin "<Visual Studio>\VC\Tools\MSVC\<version>\bin\Hostx64\x64" -o bench.exe bench.cu -lcublas`.
+
+Without an NVIDIA GPU, run the CPU version. It prints the same sections, so the lesson's chart reads either:
+
+```bash
+uv run python lessons/07_hardware/bench_cpu.py
+uv run python lessons/07_hardware/bench_cpu.py --read-only --threads 1,2,4,all
 ```
 
 Lessons 4 and 5 talk to a running llama.cpp `llama-server`. Lessons 2 and 6 can use one as well, for cross-checks. Start a temporary one, bound to localhost:
@@ -64,7 +77,7 @@ uv run python lessons/06_attention_rebuild.py "$MODEL" --server http://127.0.0.1
 kill "$(cat /tmp/llm-bytes-up-server.pid)"
 ```
 
-The server offloads every layer to the GPU (`-ngl 99`), uses a 4,096-token context, serves one request at a time, and stops itself after 40 minutes if you forget to.
+The server offloads every layer to the GPU (`-ngl 99`; set `LESSON_GPU_LAYERS=0` to run on the CPU, or a smaller number to split the model when the GPU's memory is too small), uses a 4,096-token context, serves one request at a time, and stops itself after 40 minutes if you forget to.
 
 The capstone's batching measurement needs a server that takes 16 requests at once:
 

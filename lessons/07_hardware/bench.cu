@@ -8,8 +8,14 @@
 //   4. peak matrix-multiply throughput, BF16 on tensor cores versus FP32 without them
 //
 // Build and run:   make && ./bench
+//
+// Options, for the lesson's exercise on hiding memory latency:
+//   --read-only          stop after section 2
+//   --blocks 1,2,4,48    run the read test once per block count (512 threads per block)
+//                        instead of once with the default of 8 blocks per SM
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <vector>
 #include <cuda_runtime.h>
 #include <cuda_bf16.h>
@@ -56,7 +62,29 @@ template <typename F> float time_ms(F fn, int warm, int iters) {
     return ms / iters;
 }
 
-int main() {
+// "1,2,4,48" -> {1, 2, 4, 48}. Exits with a message on anything that is not a positive integer.
+static std::vector<int> parse_list(const char *s) {
+    std::vector<int> out;
+    while (*s) {
+        char *end;
+        long v = strtol(s, &end, 10);
+        if (end == s || v < 1) { fprintf(stderr, "--blocks: expected positive integers like 1,2,4,48\n"); exit(2); }
+        if (*end && *end != ',') { fprintf(stderr, "--blocks: unexpected '%c'\n", *end); exit(2); }
+        out.push_back((int)v);
+        s = (*end == ',') ? end + 1 : end;
+    }
+    return out;
+}
+
+int main(int argc, char **argv) {
+    bool read_only = false;
+    std::vector<int> block_list;
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--read-only")) read_only = true;
+        else if (!strcmp(argv[i], "--blocks") && i + 1 < argc) block_list = parse_list(argv[++i]);
+        else { fprintf(stderr, "usage: %s [--read-only] [--blocks 1,2,4,...]\n", argv[0]); return 2; }
+    }
+
     // ---- 1. the device ----------------------------------------------------------------
     cudaDeviceProp p;
     CK(cudaGetDeviceProperties(&p, 0));
@@ -85,10 +113,21 @@ int main() {
     CK(cudaMemset(buf, 0, bytes));
     const size_t n4 = bytes / sizeof(float4);
     const int blocks = p.multiProcessorCount * 8, threads = 512;
-    float ms = time_ms([&] { read_kernel<<<blocks, threads>>>(buf, n4, sink); }, 3, 20);
-    CK(cudaGetLastError());
-    printf("  read %.2f GB in %.2f ms  ->  %.0f GB/s\n", bytes / 1e9, ms, bytes / 1e9 / (ms / 1e3));
+    if (block_list.empty()) {
+        float ms = time_ms([&] { read_kernel<<<blocks, threads>>>(buf, n4, sink); }, 3, 20);
+        CK(cudaGetLastError());
+        printf("  read %.2f GB in %.2f ms  ->  %.0f GB/s\n", bytes / 1e9, ms, bytes / 1e9 / (ms / 1e3));
+    } else {
+        // Fewer blocks means fewer warps resident on each SM, so fewer reads in flight to hide
+        // memory latency behind. A block runs on one SM; with fewer blocks than SMs, some SMs idle.
+        for (int b : block_list) {
+            float ms = time_ms([&] { read_kernel<<<b, threads>>>(buf, n4, sink); }, 1, 3);
+            CK(cudaGetLastError());
+            printf("  %5d blocks  read %.2f GB in %8.2f ms  ->  %.0f GB/s\n", b, bytes / 1e9, ms, bytes / 1e9 / (ms / 1e3));
+        }
+    }
     CK(cudaFree(buf));
+    if (read_only) { CK(cudaFree(sink)); return 0; }
 
     // ---- 3. one weight matrix times N tokens ------------------------------------------
     // C (rows x N) = W (rows x cols) . X (cols x N), BF16 inputs, FP32 accumulate.
