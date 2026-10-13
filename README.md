@@ -38,6 +38,35 @@ cd llm-bytes-up-code
 uv sync
 ```
 
+Then ask what this machine can run:
+
+```bash
+uv run llmbytes doctor --model /path/to/deepseek-coder-6.7b-instruct.Q8_0.gguf
+```
+
+`doctor` reports your hardware and which lessons are ready. It checks that the model is the course's exact file, finds `llama-server` (from `$LLAMA_SERVER` or your `PATH`), and measures your memory bandwidth. From that bandwidth it predicts lesson 4's generation speed. Hashing the 7 GB model takes up to a minute the first time; the result is cached, and `--quick` skips it. On a GPU machine it measures GPU bandwidth too, once `lessons/07_hardware/bench` is built.
+
+## Checking a run
+
+`llmbytes check` compares a lesson's output with the course's recorded run:
+
+```bash
+uv run python lessons/04_next_token.py --server http://127.0.0.1:8099 | tee my_04.txt
+uv run llmbytes check 4 my_04.txt
+lessons/07_hardware/bench | uv run llmbytes check 7 -
+```
+
+- **✓ lines that do not depend on hardware match the reference:** probabilities, token IDs, shapes and similarities. These depend only on the model file and the arithmetic, so they must match on any machine. The last printed digit may differ, and so may column spacing.
+- **ℹ measurements:** times and speeds are never compared one to one, because a slower machine is not a wrong one.
+- **✓ shape checks**, where a lesson's point is a pattern:
+	- lesson 3: matmul beats matvec per token
+	- lesson 4: prefill runs far faster than decode
+	- lesson 7: time stays flat while memory-bound, then grows with N
+	- capstone: total throughput rises with users
+- **Lines the reference has because it ran with `--server`** are skipped when your run did not, and `check` says so.
+
+It exits 1 if anything fails.
+
 ## Running
 
 Lessons 1–3, and 6, need only the model file:
@@ -107,7 +136,13 @@ Measured on the course's DGX Spark:
 
 `outputs/` holds the output of every script as run for the course, one folder per date, so you can compare your run against the one the lessons quote.
 
-`outputs/2026-10-12/` was produced from a fresh clone of this repository on an NVIDIA DGX Spark (GB10, 128 GB unified memory), with llama.cpp build 10630 (commit `d222767c7`) serving the model on the GPU, and with the `--server` cross-checks enabled for lessons 2 and 6.
+`outputs/2026-10-12/` was produced from a fresh clone of this repository on an NVIDIA DGX Spark (GB10, 128 GB unified memory), with llama.cpp build 10630 (commit `d222767c7`) serving the model on the GPU, and with the `--server` cross-checks enabled for lessons 2 and 6. It is the reference `llmbytes check` compares against. One line is missing from its lesson 5 output: a caveat the script began printing seconds after the run was recorded. `check` ignores note-only lines, so this does not matter.
+
+`outputs/2026-10-13/` holds lesson 7 on three more machines, one folder per machine, to show the same shape on different hardware:
+
+- `laptop-rtx3000ada/`: bench.cu on a discrete laptop GPU (8 GB, 36 SMs)
+- `laptop-intel-cpu/`: bench_cpu.py on an Intel Core Ultra 7 165H with DDR5-5600
+- `dgx-spark-arm-cpu/`: bench_cpu.py on the Spark's 20 Arm cores
 
 ## License
 

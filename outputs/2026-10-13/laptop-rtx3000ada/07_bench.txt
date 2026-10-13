@@ -1,0 +1,36 @@
+== 1. the device ==
+  name:                          NVIDIA RTX 3000 Ada Generation Laptop GPU
+  compute capability:            8.9
+  streaming multiprocessors:     36
+  max threads per SM:            1536
+  32-bit registers per SM:       65536  (256 KB)
+  shared memory per SM:          100 KB
+  L2 cache:                      32768 KB
+  global memory visible to GPU:  8.6 GB
+  memory bus width:              128 bits
+  shares memory with the CPU:    no (discrete)
+  free right now:                7.4 GB
+
+== 2. read bandwidth (hand-written kernel) ==
+  read 2.15 GB in 9.35 ms  ->  230 GB/s
+
+== 3. weight matrix (11008 x 4096, BF16) times N token vectors ==
+       N  time (ms)      TFLOP/s   weights GB/s ms per token
+       1      0.390         0.23            231      0.38996
+       2      0.397         0.45            227      0.19849
+       4      0.527         0.69            171      0.13164
+       8      0.771         0.94            117      0.09638
+      16      0.588         2.46            153      0.03672
+      32      0.508         5.68            177      0.01588
+      64      0.597         9.67            151      0.00932
+     128      1.033        11.17             87      0.00807
+     256      1.431        16.14             63      0.00559
+     512      2.131        21.66             42      0.00416
+    1024      4.136        22.32             22      0.00404
+    2048      7.149        25.83             13      0.00349
+    4096     13.413        27.54              7      0.00327
+
+== 4. big square matrix multiply (8192 x 8192 x 8192) ==
+  BF16 on tensor cores:      41.5 ms  ->    26.5 TFLOP/s
+  FP32, no tensor cores:    189.8 ms  ->     5.8 TFLOP/s
+  ratio:                 4.6x

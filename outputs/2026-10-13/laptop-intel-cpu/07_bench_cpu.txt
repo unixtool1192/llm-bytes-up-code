@@ -1,0 +1,33 @@
+== 1. the machine ==
+  cpu:                           Intel(R) Core(TM) Ultra 7 165H
+  physical cores:                16
+  logical processors:            22
+  RAM total:                     68.1 GB
+  RAM free right now:            33.1 GB
+  numpy:                         2.5.4
+  BLAS:                          openblas 0.3.34.106.0 (Haswell kernels, 22 threads)
+
+== 2. read bandwidth (NumPy max over a buffer far bigger than any cache) ==
+  1 thread    read 1.07 GB in   52.73 ms  ->  20.4 GB/s
+  22 threads  read 1.07 GB in   15.57 ms  ->  68.9 GB/s
+
+== 3. weight matrix (11008 x 4096, FP32) times N token vectors ==
+       N  time (ms)      TFLOP/s   weights GB/s ms per token
+       1      2.656        0.034           67.9      2.65575
+       2      4.783        0.038           37.7      2.39173
+       4      4.758        0.076           37.9      1.18947
+       8      5.442        0.133           33.1      0.68027
+      16      5.928        0.243           30.4      0.37048
+      32      7.654        0.377           23.6      0.23918
+      64     11.936        0.484           15.1      0.18650
+     128     20.948        0.551            8.6      0.16365
+     256     43.252        0.534            4.2      0.16895
+     512     78.503        0.588            2.3      0.15333
+    1024    162.191        0.569            1.1      0.15839
+    2048    299.698        0.616            0.6      0.14634
+    4096    628.118        0.588            0.3      0.15335
+  (N = 1 runs BLAS's matrix-vector routine and N >= 2 its matrix-matrix one, so the step
+   from 1 to 2 is a change of code path, not of hardware. Compare N = 2 onwards.)
+
+== 4. big square matrix multiply (4096 x 4096 x 4096, FP32) ==
+  FP32, 22 threads:      332.1 ms  ->   0.414 TFLOP/s  (best 0.554)

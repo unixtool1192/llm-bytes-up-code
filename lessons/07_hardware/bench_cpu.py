@@ -12,69 +12,19 @@ The output has the same layout as bench.cu's, so the lesson's roofline chart rea
     uv run python lessons/07_hardware/bench_cpu.py | tee my_bench.txt
     uv run python lessons/07_hardware/bench_cpu.py --read-only --threads 1,2,4,all
 
-Two things in here are less obvious than they look:
-
-- The memory read uses max(), not sum(). NumPy's float32 sum does enough arithmetic per byte
-  that it measures the CPU, not the memory: about 11 GB/s on one core of a machine whose memory
-  reads at 75. A benchmark of memory has to do almost nothing with each byte it reads.
-- NumPy runs a reduction such as max() on one thread. To use every core, the buffer is cut into
-  many small slices and handed to a pool of threads; NumPy releases Python's global lock while
-  it works, so the threads really do run at the same time. Many slices rather than one per
-  thread lets fast cores take more of the work on CPUs that mix fast and slow cores.
+How the memory read works, and why it uses max() rather than sum(), is explained at the top of
+llmbytes/hardware.py, which lesson 4's lab tool `llmbytes doctor` shares.
 """
 
 import argparse
-import os
-import platform
-import statistics
-import subprocess
-import time
-from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import psutil
 from threadpoolctl import threadpool_info
 
-ALL = os.cpu_count() or 1
+from llmbytes.hardware import ALL_THREADS as ALL, cpu_name, read_bandwidth, read_buffer, timeit
+
 ROWS, COLS, MAX_N = 11008, 4096, 4096
-
-
-def timeit(fn, warm=2, min_reps=5, max_reps=50, min_total=0.5):
-    """Median and best wall time of fn(), in seconds, after warm-up runs."""
-    for _ in range(warm):
-        fn()
-    times = []
-    start = time.perf_counter()
-    while len(times) < max_reps and (len(times) < min_reps or time.perf_counter() - start < min_total):
-        t0 = time.perf_counter()
-        fn()
-        times.append(time.perf_counter() - t0)
-    return statistics.median(times), min(times)
-
-
-def cpu_name():
-    if platform.system() == "Windows":
-        try:
-            import winreg
-            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0")
-            return winreg.QueryValueEx(key, "ProcessorNameString")[0].strip()
-        except OSError:
-            pass
-    if os.path.exists("/proc/cpuinfo"):
-        with open("/proc/cpuinfo") as f:
-            for line in f:
-                if line.startswith("model name"):
-                    return line.split(":", 1)[1].strip()
-    # Arm Linux has no "model name" in /proc/cpuinfo; lscpu decodes the core types instead,
-    # one "Model name" line per kind of core.
-    try:
-        out = subprocess.run(["lscpu"], capture_output=True, text=True, timeout=5).stdout
-        names = [l.split(":", 1)[1].strip() for l in out.splitlines() if l.startswith("Model name")]
-        if names:
-            return " + ".join(dict.fromkeys(names))
-    except (OSError, subprocess.SubprocessError):
-        pass
-    return platform.processor() or platform.machine()
 
 
 def thread_counts(spec):
@@ -105,15 +55,12 @@ def section_device():
 
 def section_bandwidth(available, counts):
     print("\n== 2. read bandwidth (NumPy max over a buffer far bigger than any cache) ==")
-    nbytes = min(1 << 30, int(available * 0.25)) // 4 * 4
-    buf = np.full(nbytes // 4, 1.0, dtype=np.float32)       # writing it first touches every page
-    chunks = np.array_split(buf, 128)
+    buf = read_buffer(available)
     gb = buf.nbytes / 1e9
     for n in counts:
-        with ThreadPoolExecutor(n) as pool:
-            t, _ = timeit(lambda: list(pool.map(np.max, chunks)), warm=2, min_reps=10)
+        rate, t = read_bandwidth(buf, n)
         label = f"{n} thread{'s' if n > 1 else ''}"
-        print(f"  {label:<11} read {gb:.2f} GB in {t * 1e3:7.2f} ms  ->  {gb / t:.1f} GB/s")
+        print(f"  {label:<11} read {gb:.2f} GB in {t * 1e3:7.2f} ms  ->  {rate:.1f} GB/s")
 
 
 def section_matrix():
