@@ -69,6 +69,35 @@ lessons/07_hardware/bench | uv run llmbytes check 7 -
 
 It exits 1 if anything fails.
 
+## Exercises
+
+Each lesson's code exercise is graded by pytest, from `exercises/`. You write the functions; the tests are already here.
+
+| Exercise | Lesson | You write, in | Graded by |
+|---|---|---|---|
+| 1b | 1 — the Q8_0 decoder | `exercises/my_q8.py` | `exercises/test_1b_q8.py` |
+| 2b | 2 — cosine similarity | `exercises/my_cosine.py` | `exercises/test_2b_cosine.py` |
+| 3b | 3 — RMS and SiLU | `exercises/my_ffn.py` | `exercises/test_3b_ffn.py` |
+| 4b | 4 — softmax | `exercises/my_softmax.py` | `exercises/test_4b_softmax.py` |
+| 5b | 5 — the sampling settings | `exercises/my_sampling.py` | `exercises/test_5b_sampling.py` |
+| 6b | 6 — one head of attention | `exercises/my_attention.py` | `exercises/test_6b_attention.py` |
+| 8b | Capstone — speculative decoding, modelled | `exercises/my_spec.py` | `exercises/test_8b_spec.py` |
+
+```bash
+uv run llmbytes exercise 4b                  # creates exercises/my_softmax.py from its stub if missing, then runs the tests
+uv run pytest exercises/test_4b_softmax.py   # the same tests, run directly
+```
+
+- **`exercises/stubs/`** holds the starting point for each `my_*.py`: the function signatures, with a comment saying what each returns. `llmbytes exercise` copies the stub and never overwrites your file.
+- **Your `my_*` files are ignored by git**, as are the lessons' `my_NN.txt` output copies, so `git pull` never conflicts with your work.
+- **A test file whose `my_*.py` does not exist yet is skipped**, with a message saying how to create it.
+- **2b and 3b each have one test that reads the model file.** It needs `MODEL` set to the model's path, and skips without it.
+- **`exercises/solutions/`** holds the lessons' solutions. `LLMBYTES_SOLUTIONS=1 uv run pytest exercises` grades those instead of your files; that is what CI runs.
+
+## Continuous integration
+
+`.gitlab-ci.yml` runs on every push: `tests/` (the tooling's own tests, including `llmbytes check` against every recorded run), then `exercises/` against the solutions. CI has no model file, so the two model-reading exercise tests skip there.
+
 ## Running
 
 Lessons 1–3, and 6, need only the model file:

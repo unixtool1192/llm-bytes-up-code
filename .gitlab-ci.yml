@@ -1,0 +1,44 @@
+# CI for llm-bytes-up-code. Runs on a GitLab runner with the docker executor.
+#
+# One job, two suites. `tests/` checks the lab tooling: `llmbytes check` against the recorded
+# runs, `doctor`, and the layout of `exercises/`. `exercises/` is graded against the course's
+# own solutions (LLMBYTES_SOLUTIONS=1), so a change that breaks a lesson's exercise fails here
+# rather than in a learner's session.
+#
+# CI has no model file, so the two exercise tests that read it (2b's and 3b's last tests) skip
+# here; run them locally with MODEL set. `-rs` prints every skip and its reason, so the job log
+# shows exactly which ones those were.
+
+default:
+  image: python:3.13-slim
+  tags:
+    - docker
+  before_script:
+    - pip install --quiet --root-user-action=ignore uv
+  timeout: 15 minutes
+  interruptible: true
+
+variables:
+  UV_CACHE_DIR: .uv-cache
+  GIT_DEPTH: "20"
+
+cache:
+  key:
+    files:
+      - uv.lock
+  paths:
+    - .uv-cache
+
+tests:
+  stage: test
+  script:
+    - uv sync --locked --quiet
+    - uv run pytest -q tests --junitxml=report-tests.xml
+    - LLMBYTES_SOLUTIONS=1 uv run pytest -q exercises --junitxml=report-exercises.xml
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - report-tests.xml
+        - report-exercises.xml
+    expire_in: 1 week

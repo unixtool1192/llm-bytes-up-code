@@ -5,3 +5,6 @@ __pycache__/
 *.log
 lessons/07_hardware/bench
 lessons/07_hardware/bench.exe
+# Learner work: exercises/my_*.py and the lessons' `tee my_NN.txt` copies. Ignored so that
+# `git pull` never conflicts with it.
+my_*

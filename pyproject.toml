@@ -27,3 +27,7 @@ packages = ["llmbytes"]
 dev = [
     "pytest>=9.1.1",
 ]
+
+[tool.pytest.ini_options]
+# Print why each test skipped: the exercises skip with a message saying what to do next.
+addopts = "-rs"

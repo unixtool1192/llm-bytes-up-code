@@ -2,6 +2,7 @@
 
     uv run llmbytes doctor [--model PATH] [--lesson N] [--quick]
     uv run llmbytes check NN FILE        (FILE '-' reads standard input)
+    uv run llmbytes exercise ID          (e.g. 4b: create exercises/my_*.py if missing, run its tests)
 """
 
 from __future__ import annotations
@@ -9,7 +10,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import check, doctor
+from . import check, doctor, exercise
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -35,7 +36,13 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("lesson", help="lesson number, 1-8 (8 is the capstone)")
     c.add_argument("file", help="the lesson's saved output, or - for standard input")
 
+    e = sub.add_parser("exercise", help="start or re-run a lesson's code exercise, e.g. 4b")
+    e.add_argument("id", help="the exercise, as the lesson names it: 1b, 2b, 3b, 4b, 5b, 6b or 8b")
+
     args = ap.parse_args(argv)
+
+    if args.cmd == "exercise":
+        return exercise.run(args.id)
 
     if args.cmd == "doctor":
         facts = doctor.gather(args.model, args.llama_server, args.server, args.quick)
