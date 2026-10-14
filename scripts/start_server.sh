@@ -32,10 +32,28 @@ if [[ ! "$gpu_layers" =~ ^[0-9]+$ ]]; then
 fi
 # A llama.cpp build that keeps its shared libraries beside the binary needs them on the path.
 if [[ "$bin" == */* ]]; then
-    export LD_LIBRARY_PATH="$(dirname "$bin")${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    LD_LIBRARY_PATH="$(dirname "$bin")${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    export LD_LIBRARY_PATH
 fi
 
-setsid nohup timeout "$seconds" "$bin" -m "$model" --host 127.0.0.1 --port "$port" \
+# Build the launcher from whatever this system has. On Linux that is setsid nohup timeout, as
+# before. setsid (util-linux) only detaches from the terminal's session, so it is skipped where
+# it does not exist (macOS, Git Bash); nohup still guards against the terminal closing.
+# timeout is GNU coreutils: Homebrew's coreutils installs it as gtimeout, and without either a
+# one-line perl sets an alarm and execs the server, which the alarm then kills on time.
+# nohup is always in the array, so it is never empty (bash 3.2 rejects an empty "${a[@]}" under set -u).
+run=()
+command -v setsid >/dev/null 2>&1 && run+=(setsid)
+run+=(nohup)
+if command -v timeout >/dev/null 2>&1; then
+    run+=(timeout "$seconds")
+elif command -v gtimeout >/dev/null 2>&1; then
+    run+=(gtimeout "$seconds")
+else
+    run+=(perl -e 'alarm shift; exec @ARGV or die "exec: $!"' "$seconds")
+fi
+
+"${run[@]}" "$bin" -m "$model" --host 127.0.0.1 --port "$port" \
     -c "${LESSON_CTX:-4096}" -ngl "$gpu_layers" --parallel "${LESSON_PARALLEL:-1}" >"$log" 2>&1 </dev/null &
 echo $! >"$pidfile"
 
