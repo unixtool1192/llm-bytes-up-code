@@ -1,0 +1,24 @@
+(DGX Spark GPU, 2026-10-14. Two resident llama.cpp model servers were loaded on this GPU, holding about 33 GB, and idle: 0% GPU utilization, load average 0.08. Run once.)
+
+== 1. the device ==
+  name:                          NVIDIA GB10
+  compute capability:            12.1
+  streaming multiprocessors:     48
+  max threads per SM:            1536
+  32-bit registers per SM:       65536  (256 KB)
+  shared memory per SM:          100 KB
+  L2 cache:                      24576 KB
+  global memory visible to GPU:  130.7 GB
+  memory bus width:              256 bits
+  shares memory with the CPU:    yes (integrated)
+  free right now:                0.8 GB
+
+== 2. read bandwidth (hand-written kernel) ==
+      1 blocks  read 2.15 GB in   117.74 ms  ->  18 GB/s
+      2 blocks  read 2.15 GB in    58.92 ms  ->  36 GB/s
+      4 blocks  read 2.15 GB in    29.97 ms  ->  72 GB/s
+      8 blocks  read 2.15 GB in    15.42 ms  ->  139 GB/s
+     16 blocks  read 2.15 GB in     9.56 ms  ->  225 GB/s
+     24 blocks  read 2.15 GB in     8.77 ms  ->  245 GB/s
+     48 blocks  read 2.15 GB in     8.42 ms  ->  255 GB/s
+     96 blocks  read 2.15 GB in     8.41 ms  ->  255 GB/s

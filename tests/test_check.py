@@ -139,3 +139,36 @@ def test_unknown_lesson_is_refused():
 ])
 def test_measurement_lines_are_recognised(line, expected):
     assert check.is_measurement(line) is expected
+
+
+# ---- the 2026-10-14 runs on an Intel laptop CPU (x86, OpenBLAS Haswell kernels) -------------
+# The reference ran on the Spark (Arm, with llama.cpp on its GPU). What the course's own NumPy
+# code computes matched it exactly on x86; what llama.cpp computes on its CPU backend did not.
+
+X86 = OUT / "2026-10-14" / "laptop-intel-cpu"
+
+
+@pytest.mark.parametrize("name", ["01_inspect_gguf.txt", "02_tokens_and_embeddings.txt", "03_ffn_by_hand.txt"])
+def test_x86_run_matches_the_spark(name):
+    _, findings = check.run(name[:2], (X86 / name).read_text(encoding="utf-8"))
+    assert not _failures(findings), _failures(findings)
+
+
+def test_x86_rebuild_matches_the_spark_and_only_llamacpp_differs():
+    """Lesson 6: the NumPy rebuild's numbers match; llama.cpp's CPU-backend column does not."""
+    text = (X86 / "06_attention_rebuild.txt").read_text(encoding="utf-8")
+    _, findings = check.run("06", _as_if_no_server(text))
+    assert not _failures(findings), _failures(findings)
+    ref = (REF / "06_attention_rebuild.txt").read_text(encoding="utf-8").splitlines()
+    bad = [f.text for f in check.compare_exact(text.splitlines(), ref, max_shown=99) if f.ok is False][1:]
+    assert bad and all("llama.cpp" in b for b in bad), bad
+
+
+def test_x86_lesson_5_differs_only_in_server_probabilities():
+    """Lesson 5: the greedy choices, all five seeded continuations, the end-of-sequence answer
+    and the chat template matched; only the probabilities llama.cpp reports differ."""
+    text = (X86 / "05_sampling.txt").read_text(encoding="utf-8")
+    ref = (REF / "05_sampling.txt").read_text(encoding="utf-8").splitlines()
+    bad = [f.text for f in check.compare_exact(text.splitlines(), ref, max_shown=99) if f.ok is False][1:]
+    assert bad and all("server:" in b or "by hand:" in b for b in bad), bad
+    assert "seed 3 twice more gives the same text" in text

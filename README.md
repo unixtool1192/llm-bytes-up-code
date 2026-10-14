@@ -56,7 +56,9 @@ uv run llmbytes check 4 my_04.txt
 lessons/07_hardware/bench | uv run llmbytes check 7 -
 ```
 
-- **✓ lines that do not depend on hardware match the reference:** probabilities, token IDs, shapes and similarities. These depend only on the model file and the arithmetic, so they must match on any machine. The last printed digit may differ, and so may column spacing.
+- **✓ lines that do not depend on hardware match the reference:** probabilities, token IDs, shapes and similarities. The last printed digit may differ, and so may column spacing.
+	- **What this repository's own NumPy code computes** (lessons 1–3, and lesson 6's rebuild) matched the Spark reference to the last printed digit on an Intel x86 laptop too.
+	- **What llama.cpp computes** (lessons 4 and 5, and the `llama.cpp` columns of lessons 2 and 6) depends on the llama.cpp backend that ran it. On a CPU-only build on the Intel laptop, probabilities differed from the Spark's GPU run from the third decimal place, so `check` fails those lines there. Token IDs, tokenizations, greedy choices and seeded text still matched. See *Recorded runs*.
 - **ℹ measurements:** times and speeds are never compared one to one, because a slower machine is not a wrong one.
 - **✓ shape checks**, where a lesson's point is a pattern:
 	- lesson 3: matmul beats matvec per token
@@ -129,7 +131,8 @@ Measured on the course's DGX Spark:
 | 08 | about 50 s — five rounds of 256-token generations | small (the server holds the model and 16 users' KV cache, ~8.6 GB) |
 
 - **Speeds depend on the machine.** Lesson 3's matvec timing and lesson 4's tokens/s will differ on other hardware; the *ratios* are the point.
-- **Probabilities and tokenizations should match the lessons exactly**, for the same model file and a similar llama.cpp version.
+- **Tokenizations match the lessons exactly** for the same model file. **Probabilities match exactly when llama.cpp runs on a GPU like the Spark's**; on a CPU-only build they differed from the third decimal place (*Recorded runs*).
+- **On a CPU, lessons 4 and 6 take minutes, not seconds.** On the Intel laptop below, lesson 4 decoded at 8.4 tokens/s and prefilled its 1,921-token prompt in 76.1 and 77.8 s; lesson 6's forward pass took 63.0 s, against 4.7 s on the Spark.
 - **Lesson 5's by-hand check uses only the top 200 tokens**, so at temperatures above 1 (which shift weight into the tail) it reads a few thousandths high. The other settings match exactly.
 
 ## Recorded runs
@@ -143,6 +146,19 @@ Measured on the course's DGX Spark:
 - `laptop-rtx3000ada/`: bench.cu on a discrete laptop GPU (8 GB, 36 SMs)
 - `laptop-intel-cpu/`: bench_cpu.py on an Intel Core Ultra 7 165H with DDR5-5600
 - `dgx-spark-arm-cpu/`: bench_cpu.py on the Spark's 20 Arm cores
+
+`outputs/2026-10-14/` holds the runs that test the lessons' "any machine" claims off the Spark, with the same model file (SHA-256 checked) and llama.cpp build 10630 (`d222767c7`):
+
+- `laptop-intel-cpu/`: lessons 1–6 on the Intel Core Ultra 7 165H, under Windows 11 in Git Bash, with llama.cpp built CPU-only from source with MSVC (Visual Studio 18 Build Tools, `cmake -B build`) and started by `scripts/start_server.sh` with its defaults. Lessons 2 and 6 used `--server`. Also `07_bench_cpu_read_only.txt`, a `bench_cpu.py --read-only --threads 1,2,4,8,16,all` sweep, four times.
+	- **Matched the Spark to the last printed digit:** lessons 1, 2 (every tokenization, including llama.cpp's) and 3, and every number of lesson 6's NumPy rebuild, attention weights included.
+	- **Differed:** every probability llama.cpp reported. Lesson 4's `' Paris'` is 0.9242 against the Spark's 0.9272, and `' <'` and `' ?'` swap places. Lesson 5's settings table differs in the third decimal, and lesson 6's `llama.cpp` column likewise. Lesson 5's greedy choices, all five seeded continuations, the end-of-sequence answer and the chat template matched.
+	- **Lesson 4's shape check fails here:** prefill ran at 25 tokens/s and decode at 8.4, about 3x per token against the Spark's 72x, and `check` asks for more than 3x.
+	- The runs do not separate x86 from Arm and CPU from GPU, because the reference's llama.cpp ran on the Spark's GPU. That the backend's arithmetic causes the difference is an inference.
+- `laptop-rtx3000ada/07_bench_read_only.txt`: `bench --read-only --blocks 1,2,4,8,16,48,96` on the laptop GPU. Bandwidth stops rising at 16 blocks (217 GB/s; 219 at 48 and 96), fewer than its 36 SMs.
+- `dgx-spark/07_bench_read_only.txt`: the same sweep with 24 added, on the Spark's GPU, while two resident model servers were loaded and idle. 225 GB/s at 16 blocks, 245 at 24, 255 from 48, against 48 SMs.
+- `dgx-spark-arm-cpu/07_bench_cpu_read_only.txt`: the thread sweep on the Spark's Arm CPU, four times. Three runs rose smoothly to about 114 GB/s by 8 threads; in the fourth, 2 and 4 threads read only 45.4 and 47.8 GB/s, then 8 threads reached 113.0.
+
+On Windows, `start_server.sh` ran in Git Bash with the native `llama-server.exe`: Git Bash converted the `/c/...` model path, and both `kill "$(cat /tmp/llm-bytes-up-server.pid)"` and the timeout stopped the native server.
 
 ## License
 

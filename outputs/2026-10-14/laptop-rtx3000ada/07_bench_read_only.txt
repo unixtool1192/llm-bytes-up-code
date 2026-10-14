@@ -1,0 +1,23 @@
+(Laptop RTX 3000 Ada, 2026-10-14. Nothing else held GPU memory beforehand: 0 MiB in use. Run once.)
+
+== 1. the device ==
+  name:                          NVIDIA RTX 3000 Ada Generation Laptop GPU
+  compute capability:            8.9
+  streaming multiprocessors:     36
+  max threads per SM:            1536
+  32-bit registers per SM:       65536  (256 KB)
+  shared memory per SM:          100 KB
+  L2 cache:                      32768 KB
+  global memory visible to GPU:  8.6 GB
+  memory bus width:              128 bits
+  shares memory with the CPU:    no (discrete)
+  free right now:                7.4 GB
+
+== 2. read bandwidth (hand-written kernel) ==
+      1 blocks  read 2.15 GB in    96.55 ms  ->  22 GB/s
+      2 blocks  read 2.15 GB in    45.82 ms  ->  47 GB/s
+      4 blocks  read 2.15 GB in    23.13 ms  ->  93 GB/s
+      8 blocks  read 2.15 GB in    12.29 ms  ->  175 GB/s
+     16 blocks  read 2.15 GB in     9.89 ms  ->  217 GB/s
+     48 blocks  read 2.15 GB in     9.82 ms  ->  219 GB/s
+     96 blocks  read 2.15 GB in     9.82 ms  ->  219 GB/s
