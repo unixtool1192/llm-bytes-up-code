@@ -1,0 +1,41 @@
+file bytes: 7,163,879,648
+architecture: llama
+  llama.context_length = 16384
+  llama.embedding_length = 4096
+  llama.block_count = 32
+  llama.feed_forward_length = 11008
+  llama.attention.head_count = 32
+  llama.attention.head_count_kv = 32
+
+tensor directory: 291 tensors
+  name                         shape (rows x cols)    type          numbers    byte offset
+  token_embd.weight            32256 x 4096           Q8_0      132,120,576      1,302,752
+  blk.0.attn_q.weight          4096 x 4096            Q8_0       16,777,216    141,680,864
+  blk.0.attn_k.weight          4096 x 4096            Q8_0       16,777,216    159,506,656
+  blk.0.attn_v.weight          4096 x 4096            Q8_0       16,777,216    177,332,448
+  blk.0.attn_output.weight     4096 x 4096            Q8_0       16,777,216    195,158,240
+  blk.0.ffn_gate.weight        11008 x 4096           Q8_0       45,088,768    212,984,032
+  blk.0.ffn_up.weight          11008 x 4096           Q8_0       45,088,768    260,890,848
+  blk.0.ffn_down.weight        4096 x 11008           Q8_0       45,088,768    308,797,664
+  blk.0.attn_norm.weight       4096                   F32             4,096    356,704,480
+  blk.0.ffn_norm.weight        4096                   F32             4,096    356,720,864
+  ...  (the nine blk.N tensors repeat for every block)
+  output_norm.weight           4096                   F32             4,096  7,023,485,152
+  output.weight                32256 x 4096           Q8_0      132,120,576  7,023,501,536
+
+tensor name prefixes: {'token_embd': 1, 'blk': 288, 'output_norm': 1, 'output': 1}
+total parameters: 6,740,512,768
+  one block: 202,383,360 x 32 blocks = 6,476,267,520; embedding + output + final norm: 264,245,248
+
+dtype -> size of this model:
+  FP32             4.0000 bytes/param -> 26.96 GB
+  BF16/FP16        2.0000 bytes/param -> 13.48 GB
+  Q8_0             1.0625 bytes/param ->  7.16 GB
+  Q4_K (~4.5-bit)  0.5625 bytes/param ->  3.79 GB
+
+first 34 bytes of blk.0.attn_q.weight:
+  63 11 00 81 08 07 f4 0d fb fb fd f5 09 fd f5 00 fc f9 01 05 fb 01 16 0c 03 fe 09 f1 f8 fd 0f 11 fc f0
+  scale (FP16 0x1163) = 0.000658
+  first 5 int8: [0, -127, 8, 7, -12]
+  first 5 weights = scale x int8: [0.0, -0.0835, 0.0053, 0.0046, -0.0079]
+  same via dequant(): [0.0, -0.0835, 0.0053, 0.0046, -0.0079]

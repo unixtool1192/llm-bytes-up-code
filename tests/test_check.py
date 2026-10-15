@@ -172,3 +172,56 @@ def test_x86_lesson_5_differs_only_in_server_probabilities():
     bad = [f.text for f in check.compare_exact(text.splitlines(), ref, max_shown=99) if f.ok is False][1:]
     assert bad and all("server:" in b or "by hand:" in b for b in bad), bad
     assert "seed 3 twice more gives the same text" in text
+
+
+# ---- the 2026-10-14 runs on a Linux x86 workstation CPU and the Spark's Arm CPU ---------------
+# The same model file and llama.cpp build 10630, built CPU-only with gcc on Linux. The course's
+# own NumPy code matched the Spark again; llama.cpp's probabilities differed from the Spark's GPU
+# run, and from each other: each CPU backend run gave its own values.
+
+WS = OUT / "2026-10-14" / "workstation-intel-i7-9700k-cpu"
+ARM = OUT / "2026-10-14" / "dgx-spark-arm-cpu"
+
+
+@pytest.mark.parametrize("name", ["01_inspect_gguf.txt", "02_tokens_and_embeddings.txt", "03_ffn_by_hand.txt"])
+def test_workstation_run_matches_the_spark(name):
+    _, findings = check.run(name[:2], (WS / name).read_text(encoding="utf-8"))
+    assert not _failures(findings), _failures(findings)
+
+
+@pytest.mark.parametrize("run", [WS, ARM], ids=["workstation", "spark-arm-cpu"])
+def test_cpu_rebuild_matches_the_spark_and_only_llamacpp_differs(run):
+    text = (run / "06_attention_rebuild.txt").read_text(encoding="utf-8")
+    _, findings = check.run("06", _as_if_no_server(text))
+    assert not _failures(findings), _failures(findings)
+    ref = (REF / "06_attention_rebuild.txt").read_text(encoding="utf-8").splitlines()
+    bad = [f.text for f in check.compare_exact(text.splitlines(), ref, max_shown=99) if f.ok is False][1:]
+    assert bad and all("llama.cpp" in b for b in bad), bad
+
+
+@pytest.mark.parametrize("run", [WS, ARM], ids=["workstation", "spark-arm-cpu"])
+def test_cpu_lesson_5_differs_only_in_server_probabilities(run):
+    text = (run / "05_sampling.txt").read_text(encoding="utf-8")
+    ref = (REF / "05_sampling.txt").read_text(encoding="utf-8").splitlines()
+    bad = [f.text for f in check.compare_exact(text.splitlines(), ref, max_shown=99) if f.ok is False][1:]
+    assert bad and all("server:" in b or "by hand:" in b for b in bad), bad
+    assert "seed 3 twice more gives the same text" in text
+
+
+def _paris(path):
+    import re
+    return re.search(r"' Paris'\s+id\s+8873\s+p = ([\d.]+)", path.read_text(encoding="utf-8")).group(1)
+
+
+def test_each_llamacpp_backend_gives_its_own_paris():
+    """Lesson 4's ' Paris' on the Spark's GPU (the reference) and on three CPUs: four values."""
+    runs = [REF, X86, WS, ARM]
+    values = [_paris(r / "04_next_token.txt") for r in runs]
+    assert values == ["0.9272", "0.9242", "0.9260", "0.9233"], values
+
+
+@pytest.mark.parametrize("run", [WS, ARM], ids=["workstation", "spark-arm-cpu"])
+def test_cpu_prefill_shape_passes_on_linux(run):
+    """Unlike the Windows laptop's 3x, both Linux CPU runs prefill more than 3x faster than decode."""
+    _, findings = check.run("04", (run / "04_next_token.txt").read_text(encoding="utf-8"))
+    assert any(f.ok is True and "faster per token" in f.text for f in findings)

@@ -1,0 +1,48 @@
+layers=32 heads=32 kv_heads=32 head_dim=128 rope_base=100000.0 rope_linear_scale=4.0 context_length=16384
+prompt tokens: [(546, 'The'), (6075, ' capital'), (280, ' of'), (7243, ' France'), (317, ' is')]
+forward pass: 12.7 s
+
+== 1. prediction check ==
+  ' Paris'   rebuild 0.9260   llama.cpp 0.9260
+  ' "'       rebuild 0.0150   llama.cpp 0.0145
+  ' <'       rebuild 0.0086   llama.cpp 0.0082
+  ' ?'       rebuild 0.0081   llama.cpp 0.0087
+  ':'        rebuild 0.0069   llama.cpp 0.0073
+  ' {'       rebuild 0.0062   llama.cpp 0.0061
+
+== 2. attention ==
+  from the last token, mean over heads, selected layers:
+                  'The' ' capital'      ' of'  ' France'      ' is'
+     layer 0      0.186      0.129      0.278      0.140      0.267
+     layer 1      0.263      0.075      0.156      0.201      0.305
+     layer 2      0.773      0.047      0.060      0.061      0.059
+     layer 8      0.776      0.057      0.046      0.070      0.052
+    layer 16      0.720      0.072      0.038      0.118      0.052
+    layer 24      0.857      0.043      0.014      0.053      0.033
+    layer 31      0.659      0.064      0.062      0.113      0.102
+  mean weight on the first token over all layers and heads: 0.771
+  heads giving ' France' more than half their weight: 26 of 1024
+  strongest: [('layer 23 head 12', 0.93), ('layer 17 head 11', 0.889), ('layer 21 head 0', 0.872), ('layer 12 head 19', 0.847), ('layer 0 head 18', 0.826)]
+  full pattern, layer 23 head 12 (row = looking from, column = looking at):
+                  'The' ' capital'      ' of'  ' France'      ' is'
+         The      1.000          .          .          .          .
+     capital      0.980      0.020          .          .          .
+          of      0.967      0.009      0.025          .          .
+      France      0.933      0.012      0.018      0.037          .
+          is      0.024      0.001      0.001      0.930      0.045
+  layer 0, mean over heads:
+                  'The' ' capital'      ' of'  ' France'      ' is'
+         The      1.000          .          .          .          .
+     capital      0.536      0.464          .          .          .
+          of      0.262      0.287      0.451          .          .
+      France      0.238      0.173      0.354      0.235          .
+          is      0.186      0.129      0.278      0.140      0.267
+
+== 3. KV cache ==
+  recompute all  '.' 0.3975  '."' 0.0856  '<' 0.0796
+  use the cache  '.' 0.3975  '."' 0.0856  '<' 0.0796
+  largest logit difference: 1.05e-05
+  cache per token: 2 x 32 layers x 4096 numbers x 2 bytes (FP16) = 524,288 bytes
+      1921 tokens -> 1.01 GB
+      2048 tokens -> 1.07 GB
+     16384 tokens -> 8.59 GB

@@ -1,0 +1,33 @@
+embedding_length=4096 feed_forward_length=11008 block_count=32 rms eps=9.999999974752427e-07
+shapes (rows x cols): gate (11008, 4096) up (11008, 4096) down (4096, 11008)
+
+== 1. RMSNorm ==
+  first 3 elements: [-0.1781, -0.0918, 0.1531]  squares: [0.0317, 0.0084, 0.0234]
+  mean of squares = 0.02917   RMS = 0.1708
+  RMS after dividing by it = 1.0000
+  length = RMS x sqrt(4096) = 0.1708 x 64 = 10.93  (direct: 10.93)
+
+== 2. two matvecs up ==
+  g[0] via NumPy = -0.183733   via a plain loop = -0.183733
+
+== 3. SiLU gating ==
+  SiLU(-4) = -0.072
+  SiLU(-2) = -0.238
+  SiLU(-1) = -0.269
+  SiLU(+0) = +0.000
+  SiLU(+1) = +0.731
+  SiLU(+2) = +1.762
+  SiLU(+4) = +3.928
+  gates negative: 76%   |SiLU|<0.1: 91%   |SiLU|<0.01: 6%   most negative SiLU: -0.278
+
+== 4-5. down, then the residual ==
+  length x 10.93, adjustment 3.70, y 11.79
+  dot(x, y) = 122.42; lengths multiplied = 128.90
+  cosine = 0.9497  (about 18 degrees)
+
+== FLOPs for one token through one whole block ==
+  matvecs 404,750,336   everything else ~107,008   matvec share 99.97%
+
+== matvec vs matmul on this CPU (180 MB FP32 matrix) ==
+  1 token:      6.76 ms    26.7 GB/s    13.3 GFLOP/s
+  256 tokens:  34.74 ms   664.4 GFLOP/s  (5.1x the time for 256x the work)

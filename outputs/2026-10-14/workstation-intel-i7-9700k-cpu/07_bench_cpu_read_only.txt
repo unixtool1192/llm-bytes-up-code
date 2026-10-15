@@ -1,0 +1,42 @@
+(Intel desktop workstation CPU, Linux, 2026-10-14, run inside a container at nice 19. Run 1 is shown in full; runs 2-4, straight after it, repeat section 2. The CPU has 8 cores and no hyper-threading, so 'all' is 8 threads and the 16-thread row oversubscribes them. Load average 8.46 when the sweep began, from the lesson runs just before it; the host's other services kept running, and their activity was not recorded.)
+
+== 1. the machine ==
+  cpu:                           Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz
+  physical cores:                8
+  logical processors:            8
+  RAM total:                     50.4 GB
+  RAM free right now:            35.4 GB
+  numpy:                         2.5.4
+  BLAS:                          openblas 0.3.34.106.0 (Haswell kernels, 8 threads)
+
+== 2. read bandwidth (NumPy max over a buffer far bigger than any cache) ==
+  1 thread    read 1.07 GB in   50.74 ms  ->  21.2 GB/s
+  2 threads   read 1.07 GB in   42.37 ms  ->  25.3 GB/s
+  4 threads   read 1.07 GB in   37.13 ms  ->  28.9 GB/s
+  8 threads   read 1.07 GB in   39.05 ms  ->  27.5 GB/s
+  16 threads  read 1.07 GB in   39.16 ms  ->  27.4 GB/s
+  8 threads   read 1.07 GB in   39.06 ms  ->  27.5 GB/s
+
+== 2. read bandwidth, run 2 of 4 ==
+  1 thread    read 1.07 GB in   49.66 ms  ->  21.6 GB/s
+  2 threads   read 1.07 GB in   42.07 ms  ->  25.5 GB/s
+  4 threads   read 1.07 GB in   37.54 ms  ->  28.6 GB/s
+  8 threads   read 1.07 GB in   39.62 ms  ->  27.1 GB/s
+  16 threads  read 1.07 GB in   39.20 ms  ->  27.4 GB/s
+  8 threads   read 1.07 GB in   39.29 ms  ->  27.3 GB/s
+
+== 2. read bandwidth, run 3 of 4 ==
+  1 thread    read 1.07 GB in   50.48 ms  ->  21.3 GB/s
+  2 threads   read 1.07 GB in   42.69 ms  ->  25.2 GB/s
+  4 threads   read 1.07 GB in   36.96 ms  ->  29.0 GB/s
+  8 threads   read 1.07 GB in   39.03 ms  ->  27.5 GB/s
+  16 threads  read 1.07 GB in   39.18 ms  ->  27.4 GB/s
+  8 threads   read 1.07 GB in   39.14 ms  ->  27.4 GB/s
+
+== 2. read bandwidth, run 4 of 4 ==
+  1 thread    read 1.07 GB in   50.19 ms  ->  21.4 GB/s
+  2 threads   read 1.07 GB in   42.14 ms  ->  25.5 GB/s
+  4 threads   read 1.07 GB in   36.95 ms  ->  29.1 GB/s
+  8 threads   read 1.07 GB in   40.02 ms  ->  26.8 GB/s
+  16 threads  read 1.07 GB in   39.22 ms  ->  27.4 GB/s
+  8 threads   read 1.07 GB in   39.08 ms  ->  27.5 GB/s

@@ -57,8 +57,8 @@ lessons/07_hardware/bench | uv run llmbytes check 7 -
 ```
 
 - **✓ lines that do not depend on hardware match the reference:** probabilities, token IDs, shapes and similarities. The last printed digit may differ, and so may column spacing.
-	- **What this repository's own NumPy code computes** (lessons 1–3, and lesson 6's rebuild) matched the Spark reference to the last printed digit on an Intel x86 laptop too.
-	- **What llama.cpp computes** (lessons 4 and 5, and the `llama.cpp` columns of lessons 2 and 6) depends on the llama.cpp backend that ran it. On a CPU-only build on the Intel laptop, probabilities differed from the Spark's GPU run from the third decimal place, so `check` fails those lines there. Token IDs, tokenizations, greedy choices and seeded text still matched. See *Recorded runs*.
+	- **What this repository's own NumPy code computes** (lessons 1–3, and lesson 6's rebuild) matched the Spark reference to the last printed digit on two x86 CPUs too, an Intel laptop and an Intel workstation. The one exception is a rounding residual in lesson 6's KV-cache test, which `check` compares only by order of magnitude.
+	- **What llama.cpp computes** (lessons 4 and 5, and the `llama.cpp` columns of lessons 2 and 6) depends on the llama.cpp backend that ran it. On three CPU-only builds (the Intel laptop, the Intel workstation and the Spark's own Arm CPU), probabilities differed from the Spark's GPU run from the third decimal place, and from each other, so `check` fails those lines there. Token IDs, tokenizations, greedy choices and seeded text still matched. See *Recorded runs*.
 - **ℹ measurements:** times and speeds are never compared one to one, because a slower machine is not a wrong one.
 - **✓ shape checks**, where a lesson's point is a pattern:
 	- lesson 3: matmul beats matvec per token
@@ -160,8 +160,8 @@ Measured on the course's DGX Spark:
 | 08 | about 50 s — five rounds of 256-token generations | small (the server holds the model and 16 users' KV cache, ~8.6 GB) |
 
 - **Speeds depend on the machine.** Lesson 3's matvec timing and lesson 4's tokens/s will differ on other hardware; the *ratios* are the point.
-- **Tokenizations match the lessons exactly** for the same model file. **Probabilities match exactly when llama.cpp runs on a GPU like the Spark's**; on a CPU-only build they differed from the third decimal place (*Recorded runs*).
-- **On a CPU, lessons 4 and 6 take minutes, not seconds.** On the Intel laptop below, lesson 4 decoded at 8.4 tokens/s and prefilled its 1,921-token prompt in 76.1 and 77.8 s; lesson 6's forward pass took 63.0 s, against 4.7 s on the Spark.
+- **Tokenizations match the lessons exactly** for the same model file. **Probabilities match exactly when llama.cpp runs on the Spark's GPU**; on each of three CPU-only builds they differed from the third decimal place, each by its own amount (*Recorded runs*).
+- **On a CPU, lessons 4 and 6 take minutes, not seconds.** Lesson 4's 1,921-token prefill took 76.1 s on the Intel laptop, 47.9 s on the Intel workstation and 35.8 s on the Spark's Arm CPU, against 0.80 s on its GPU. Lesson 6's forward pass took 63.0 s, 12.7 s and 7.0 s, against 4.7 s in the reference run.
 - **Lesson 5's by-hand check uses only the top 200 tokens**, so at temperatures above 1 (which shift weight into the tail) it reads a few thousandths high. The other settings match exactly.
 
 ## Recorded runs
@@ -182,10 +182,57 @@ Measured on the course's DGX Spark:
 	- **Matched the Spark to the last printed digit:** lessons 1, 2 (every tokenization, including llama.cpp's) and 3, and every number of lesson 6's NumPy rebuild, attention weights included.
 	- **Differed:** every probability llama.cpp reported. Lesson 4's `' Paris'` is 0.9242 against the Spark's 0.9272, and `' <'` and `' ?'` swap places. Lesson 5's settings table differs in the third decimal, and lesson 6's `llama.cpp` column likewise. Lesson 5's greedy choices, all five seeded continuations, the end-of-sequence answer and the chat template matched.
 	- **Lesson 4's shape check fails here:** prefill ran at 25 tokens/s and decode at 8.4, about 3x per token against the Spark's 72x, and `check` asks for more than 3x.
-	- The runs do not separate x86 from Arm and CPU from GPU, because the reference's llama.cpp ran on the Spark's GPU. That the backend's arithmetic causes the difference is an inference.
+- `workstation-intel-i7-9700k-cpu/`: lessons 1–6 on an Intel Core i7-9700K desktop (8 cores, no hyper-threading, DDR4-2133), under Linux, with llama.cpp built CPU-only with gcc 14 (`cmake -B build`, in a Debian 13 container) and started by `scripts/start_server.sh` with its defaults. Lessons 2 and 6 used `--server`. Everything ran at `nice -n 19` on a host whose other services kept running. Also `07_bench_cpu_read_only.txt`, the same thread sweep as the laptop's, four times.
+	- **Matched the Spark to the last printed digit:** lessons 1, 2 and 3, and lesson 6's rebuild, apart from the KV-cache test's rounding residual (1.05e-05 against 1.62e-05).
+	- **Differed:** every probability llama.cpp reported, from the Spark's and from the laptop's. Lesson 5's greedy choices, seeded continuations, end-of-sequence answer and chat template matched.
+	- **Lesson 4's shape check passes:** prefill 40 tokens/s, decode 3.5, about 11x.
+- `dgx-spark-arm-cpu/04_next_token.txt`, `05_sampling.txt` and `06_attention_rebuild.txt`: lessons 4–6 on the Spark itself, with llama.cpp built CPU-only with gcc (`cmake -B build`) and the server started with `LESSON_GPU_LAYERS=0`. It logged "no usable GPU found", and `nvidia-smi` listed only the two resident servers while it ran. Lesson 6 used `--server`; the server ran at `nice -n 19`, beside two resident model servers on the GPU.
+	- **Differed from the Spark's own GPU run** in every llama.cpp probability, and from both x86 CPUs. Lesson 5's greedy choices, seeded continuations, end-of-sequence answer and chat template matched; lesson 6's rebuild matched exactly, residual included.
+	- **Lesson 4's shape check passes:** prefill 54 tokens/s, decode 11.0, about 5x.
 - `laptop-rtx3000ada/07_bench_read_only.txt`: `bench --read-only --blocks 1,2,4,8,16,48,96` on the laptop GPU. Bandwidth stops rising at 16 blocks (217 GB/s; 219 at 48 and 96), fewer than its 36 SMs.
 - `dgx-spark/07_bench_read_only.txt`: the same sweep with 24 added, on the Spark's GPU, while two resident model servers were loaded and idle. 225 GB/s at 16 blocks, 245 at 24, 255 from 48, against 48 SMs.
 - `dgx-spark-arm-cpu/07_bench_cpu_read_only.txt`: the thread sweep on the Spark's Arm CPU, four times. Three runs rose smoothly to about 114 GB/s by 8 threads; in the fourth, 2 and 4 threads read only 45.4 and 47.8 GB/s, then 8 threads reached 113.0.
+- `workstation-intel-i7-9700k-cpu/07_bench_cpu_read_only.txt`: the thread sweep on the workstation's CPU, four times. Bandwidth peaked at 4 threads, 28.9–29.1 GB/s, and settled at about 27.5 from 8; one thread read 21.2–21.6.
+- **Not run:** llama.cpp on the workstation's GPU (an 8 GB GeForce GTX 1070). Docker on that host had no GPU access, and fixing that is left for later.
+
+### Four llama.cpp backends, one model file
+
+Lessons 4–6 on every machine above, with the same model file and llama.cpp build 10630. The Spark's GPU run is the reference.
+
+| Machine | llama.cpp ran on | Lesson 4 `' Paris'` | Lesson 4 `' == '` | Lesson 5 raw `' == '` | Lesson 6 `llama.cpp` `' Paris'` (rebuild) |
+|---|---|---|---|---|---|
+| DGX Spark, reference | GPU, Linux | 0.9272 | 0.3075 | 0.307 | 0.9272 (0.9260) |
+| Intel laptop | x86 CPU, Windows, MSVC | 0.9242 | 0.3095 | 0.310 | 0.9242 (0.9260) |
+| Intel workstation | x86 CPU, Linux, gcc | 0.9260 | 0.3119 | 0.312 | 0.9260 (0.9260) |
+| DGX Spark | Arm CPU, Linux, gcc | 0.9233 | 0.3090 | 0.309 | 0.9233 (0.9260) |
+| Intel workstation | GPU | not run: Docker had no GPU access (to be fixed later) | | | |
+
+| Machine | Decode (tokens/s) | Prefill (tokens/s) | Prefill ÷ decode | Decode × 7.16 GB | CPU read bandwidth, all threads |
+|---|---|---|---|---|---|
+| DGX Spark GPU, reference | 33.7 | 2,414 | 72x | 241 GB/s | (GPU: 255 GB/s, `dgx-spark/07_bench_read_only.txt`) |
+| Intel laptop CPU | 8.4 | 25 | 3x | 60 GB/s | 61.3 GB/s |
+| Intel workstation CPU | 3.5 | 40 | 11x | 25 GB/s | 27.5 GB/s |
+| DGX Spark Arm CPU | 11.0 | 54 | 5x | 79 GB/s | 114.0 GB/s |
+
+| CPU read bandwidth (GB/s), run 1 | 1 | 2 | 4 | 8 | 16 | all |
+|---|---|---|---|---|---|---|
+| Intel laptop, all = 22 | 20.7 | 32.1 | 42.6 | 53.3 | 60.2 | 61.3 |
+| Intel workstation, all = 8 | 21.2 | 25.3 | 28.9 | 27.5 | 27.4 | 27.5 |
+| Spark Arm CPU, all = 20 | 33.8 | 61.9 | 98.0 | 114.1 | 112.7 | 114.0 |
+
+The GPU read sweeps, beside them: laptop RTX 3000 Ada 219 GB/s and Spark GB10 255 GB/s at 96 blocks; the workstation's GPU was not run.
+
+What these runs show, and what they do not:
+
+- **Every llama.cpp backend gave its own probabilities.** Observed: four runs, four values of `' Paris'`. The course's own NumPy rebuild gave 0.9260 on all four processors.
+	- **CPU versus GPU matters**, observed: on the same Spark, the CPU build and the GPU build differ (0.9233 against 0.9272).
+	- **The CPU matters too**, observed: two Linux gcc CPU builds, x86 and Arm, differ (0.9260 against 0.9233). So "the CPU path" is not one path.
+	- **Windows and MSVC are not isolated:** the two x86 runs differ (0.9242 against 0.9260), but they differ in CPU as well as in compiler and operating system.
+	- **Why, inferred and not tested here:** llama.cpp's CPU backend picks its matrix kernels by the instruction set of the CPU it was built on, and each kernel adds up its products in a different order and precision, so each rounds differently.
+- **Decode runs at memory speed on every CPU.** Observed: decode tokens/s times the 7.16 GB model file comes to 60, 25 and 79 GB/s, against measured reads of 61.3, 27.5 and 114.0 GB/s.
+- **The prefill ÷ decode ratio does not test MSVC.** It divides compute speed by memory speed, and the workstation's ratio (11x) is high mainly because its memory is slow (3.5 tokens/s decode), not because its prefill is fast. The Spark's Arm CPU, built with gcc on Linux, managed only 5x.
+	- **Observed:** the laptop prefilled slowest of the three CPUs, 25 tokens/s against the workstation's 40 on half as many cores.
+	- **Inferred:** that fits the MSVC build being slower, and fits the laptop's power limits and mixed fast and slow cores just as well. A gcc or clang build on the same laptop, under WSL, would separate them.
 
 On Windows, `start_server.sh` ran in Git Bash with the native `llama-server.exe`: Git Bash converted the `/c/...` model path, and both `kill "$(cat /tmp/llm-bytes-up-server.pid)"` and the timeout stopped the native server.
 
