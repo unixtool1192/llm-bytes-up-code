@@ -1,4 +1,4 @@
-(DGX Spark Arm CPU, 2026-10-14. Run 1 is shown in full; runs 2-4, straight after it, repeat section 2. Two resident model servers were loaded and idle throughout.)
+(DGX Spark Arm CPU, 2026-10-14. Run 1 is shown in full; runs 2-4, straight after it, repeat section 2. Two resident model servers were loaded throughout (systemd shows both running since 2026-10-12 08:00); idleness not recorded.)
 
 == 1. the machine ==
   cpu:                           Cortex-X925 + Cortex-A725
